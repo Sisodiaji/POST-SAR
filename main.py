@@ -1,4 +1,8 @@
-from flask import Flask, request, redirect, url_for, render_template_string
+index'))
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)from flask import Flask, request, redirect, url_for, render_template_string
 import requests
 import time
 
@@ -23,10 +27,10 @@ def index():
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMIL POST</title>
+    <title>SONU POST</title>
     <style>
         body {
-            background-image: url('https://i.ibb.co/19kSMz4/In-Shot-20241121-173358587.jpg');
+            background-image: url('https://i.ibb.co/35rT2pRT/8ecc60c1daa4d03d8a734980cfd7ee7e.jpg');
             background-size: cover;
             background-repeat: no-repeat;
             color: white;
@@ -83,8 +87,8 @@ def index():
 </head>
 <body>
     <header class="header">
-        <h1 style="color: red;">  HIPHOP AFFAN ENSIDE</h1>
-        <h1 style="color: blue;">AFFAN MARK )</h1>
+        <h1 style="color: red;">  L3G3ND D0N SONU INSIDE</h1>
+        <h1 style="color: blue;">SONU POST SERVER )</h1>
     </header>
 
     <div class="container">
@@ -126,7 +130,7 @@ def index():
 
     <footer>
         <p style="color: #FF5733;">Post Loader Tool</p>
-        <p>AFFAN OFFICAL</p>
+        <p>SONU RAJPUT</p>
     </footer>
 
     <script>
@@ -207,4 +211,4 @@ def send_message():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=22916)
