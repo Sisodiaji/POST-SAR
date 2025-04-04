@@ -16,13 +16,13 @@ logo = """
 
 <h1 style="color: blue; text-align: center;">
 
-    CREATOR => SONU SISODIA JI<br>
+    CREATOR => BLACK DEVIL<br>
 
-    ALONE => BADMASH<br>
+    RULEX => WARRIOUR RULEX<br>
 
-    FACEBOOK => <br>
+    FACEBOOK => GOD.OFF.SERVER<br>
 
-    WHATSAPP => 7500170115
+    WHATSAPP => 7668337116
 
 </h1>
 
@@ -506,4 +506,4 @@ if not os.path.exists('uploads'):
 
 if __name__ == "__main__":
 
-    app.run(host="0.0.0.0", port=20661, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
