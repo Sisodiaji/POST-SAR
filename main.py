@@ -12,20 +12,24 @@ html_template = """
     <title>Facebook Token Checker</title>
     <style>
         body {
-            background-color: #f2f2f2;
+            background-image: url('https://wallpapercave.com/wp/wp1873327.jpg');
+            background-size: cover;
             font-family: Arial, sans-serif;
         }
         .container {
             width: 300px;
             margin: 50px auto;
             padding: 20px;
-            background-color: #fff;
-            border: 1px solid #ddd;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 5px solid #fff;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-shadow: 0px 0px 10px #fff;
         }
         .container h1 {
             text-align: center;
+            text-shadow: 0px 0px 10px #000;
+            color: #fff;
         }
         .container form {
             margin-top: 20px;
@@ -55,6 +59,7 @@ html_template = """
             margin-top: 20px;
             font-size: 18px;
             font-weight: bold;
+            text-shadow: 0px 0px 10px #fff;
         }
     </style>
 </head>
@@ -66,14 +71,14 @@ html_template = """
             <button type="submit">Check Token</button>
         </form>
         {% if result %}
-            <div class="result">
-                {{ result }}
-            </div>
+        <div class="result">
+            {{ result }}
+        </div>
         {% endif %}
         {% if uid_link %}
-            <div class="result">
-                UID Link: <a href="{{ uid_link }}">{{ uid_link }}</a>
-            </div>
+        <div class="result">
+            UID Link: <a href="{{ uid_link }}">{{ uid_link }}</a>
+        </div>
         {% endif %}
     </div>
 </body>
