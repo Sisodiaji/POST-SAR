@@ -19,6 +19,14 @@ HTML_TEMPLATE = """
             background-position: center;
             background-attachment: fixed;
         }
+        .info {
+            border: 2px solid #000;
+            padding: 10px;
+            width: 300px;
+            margin: 20px auto;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
         .developer {
             color: #00ff00; /* Green color */
             text-decoration: underline;
@@ -30,8 +38,10 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <h1>Page Token Extractor</h1>
-    <p class="developer">Developed by Sonu Singh</p>
-    <p class="contact">Contact: 7500170115</p>
+    <div class="info">
+        <p class="developer">Developed by Sonu Singh</p>
+        <p class="contact">Contact: 7500170115</p>
+    </div>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
         <button type="submit">Extract Token</button>
