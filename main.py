@@ -14,6 +14,10 @@ HTML_TEMPLATE = """
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            background-image: url('https://i.ibb.co/TBDN3svt/20250403-081118.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
     </style>
 </head>
@@ -46,9 +50,13 @@ def home():
         access_token = request.form.get('token')
         if not access_token:
             return render_template_string(HTML_TEMPLATE, error="Token is required")
+        
         url = f"https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token={access_token}"
         try:
             response = requests.get(url)
+            if response.status_code != 200:
+                return render_template_string(HTML_TEMPLATE, error="Invalid token or API error")
+            
             data = response.json()
             if "data" in data:
                 pages = []
