@@ -5,13 +5,13 @@ app = Flask(__name__)
 GRAPH_API_URL = "https://graph.facebook.com/v18.0"
 
 # Updated HTML & CSS Template
-HTML_TEMPLATE = """
+HTML_TEMPLATE = """ 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messenger Group Uid & Page Token Extractor</title>
+    <title>Page Token Extractor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,11 +71,21 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div class="container">
-        <h2>Messenger Group Uid & Page Token Extractor</h2>
+        <h2>Page Token Extractor</h2>
         <form method="POST">
             <input type="text" name="token" placeholder="Enter Access Token" required>
-            <button type="submit">Extract</button>
+            <button type="submit">Extract Token</button>
         </form>
+        {% if pages %}
+        <div class="result">
+            <h3>Page Tokens:</h3>
+            <ul>
+                {% for page in pages %}
+                <li><strong>{{ page.name }}</strong> - Page ID: {{ page.id }} - Page Token: {{ page.token }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         {% if groups %}
         <div class="result">
             <h3>Messenger Groups:</h3>
@@ -84,12 +94,6 @@ HTML_TEMPLATE = """
                 <li><strong>{{ group.name }}</strong> - UID: {{ group.id }}</li>
                 {% endfor %}
             </ul>
-        </div>
-        {% endif %}
-        {% if page_token %}
-        <div class="result">
-            <h3>Page Token:</h3>
-            <p>{{ page_token }}</p>
         </div>
         {% endif %}
         {% if error %}
@@ -106,20 +110,24 @@ def home():
         access_token = request.form.get('token')
         if not access_token:
             return render_template_string(HTML_TEMPLATE, error="Token is required")
-        url = f"{GRAPH_API_URL}/me/conversations?fields=id,name&access_token={access_token}"
+        
+        # Get page tokens
+        url_pages = f"{GRAPH_API_URL}/me/accounts?fields=id,name,access_token&access_token={access_token}"
         try:
-            response = requests.get(url)
-            data = response.json()
-            if "data" in data:
-                groups = data["data"]
-                page_token = access_token
-                return render_template_string(HTML_TEMPLATE, groups=groups, page_token=page_token)
+            response_pages = requests.get(url_pages)
+            data_pages = response_pages.json()
+            pages = []
+            if "data" in data_pages:
+                for page in data_pages["data"]:
+                    pages.append({
+                        "id": page["id"],
+                        "name": page["name"],
+                        "token": page["access_token"]
+                    })
             else:
-                return render_template_string(HTML_TEMPLATE, error="Invalid token or no Messenger groups found")
+                return render_template_string(HTML_TEMPLATE, error="Invalid token or no pages found")
         except Exception as e:
             return render_template_string(HTML_TEMPLATE, error="Something went wrong")
-    return render_template_string(HTML_TEMPLATE)
 
-if __name__ == '__main__':
-    print("Flask server started on port 5000...")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+        # Get messenger groups
+        url_groups = f"{GRAPH_API_URL}/me/conversations?fields=id
