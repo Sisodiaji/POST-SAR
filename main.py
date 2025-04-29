@@ -14,7 +14,7 @@ HTML_TEMPLATE = """
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-image: url('https://i.ibb.co/TBDN3svt/20250403-081118.jpg');
+            background-image: url('https://i.ibb.co/pvLcxtgF/1742870558476.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
