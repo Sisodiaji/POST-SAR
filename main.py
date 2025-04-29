@@ -14,7 +14,7 @@ HTML_TEMPLATE = """
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-image: url('https://i.ibb.co/TBDN3svt/20250403-081118.jpg');
+            background-image: url('https://i.ibb.co/r2LjfV3x/2d8b98aa48e24c185694c9f04989eed8.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -40,8 +40,8 @@ HTML_TEMPLATE = """
 <body>
     <h1>Page Token Extractor</h1>
     <div class="info">
-        <p class="developer">Developed by Sonu Singh</p>
-        <p class="contact">Contact: 7500170115</p>
+        <p class="developer">𝗦𝗢𝗡𝗨 𝗦𝗜𝗦𝗢𝗗𝗜𝗔 𝗝𝗜</p>
+        <p class="contact">𝗖𝗢𝗡𝗧𝗔𝗖𝗧: 7500170115</p>
     </div>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
