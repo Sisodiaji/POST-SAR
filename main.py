@@ -55,7 +55,11 @@ HTML_TEMPLATE = """
     <h1>Page Token Extractor</h1>
     <div class="info">
         <p class="developer"> 𝗦𝗢𝗡𝗨  𝗥𝗔𝗝𝗣𝗨𝗧 </p>
+
+        
         <p class="developer"> 𝗜𝗡𝗝𝗢𝗬 </p>
+
+        
         <p class="contact"> 𝗖𝗢𝗡𝗧𝗔𝗖𝗧: 7500170115</p>
     </div>
     <form method="POST">
