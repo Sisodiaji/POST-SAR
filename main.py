@@ -9,7 +9,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Token Extractor</title>
+    <title style="color: red;">Page Token Extractor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,8 +21,8 @@ HTML_TEMPLATE = """
         }
         .info {
             border: 2px solid #87CEEB; /* Aasmani color */
-            padding: 10px;
-            width: 300px;
+            padding: 20px;
+            width: 400px;
             margin: 20px auto;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -35,6 +35,17 @@ HTML_TEMPLATE = """
         .contact {
             color: #0000ff; /* Blue color */
         }
+        h1 {
+            color: red;
+        }
+        button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -45,7 +56,7 @@ HTML_TEMPLATE = """
     </div>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
-        <button type="submit">Extract Token</button>
+        <button type="submit">Submit Token</button>
     </form>
     {% if pages %}
     <h2>Page Tokens:</h2>
