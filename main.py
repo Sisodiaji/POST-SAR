@@ -14,10 +14,7 @@ HTML_TEMPLATE = """
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-image: url('https://i.ibb.co/pvLcxtgF/1742870558476.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-image: url('https://i.i');
         }
         .info {
             border: 2px solid #000;
@@ -26,6 +23,7 @@ HTML_TEMPLATE = """
             margin: 20px auto;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            background-color: #f2f2f2;
         }
         .developer {
             color: #00ff00; /* Green color */
