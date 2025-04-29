@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-HTML_TEMPLATE = """
+HTML_TEMPLATE = """ 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,6 +19,8 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <h1>Page Token Extractor</h1>
+    <p>Developed by Sonu Singh</p>
+    <p>Contact: 7500170115</p>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
         <button type="submit">Extract Token</button>
@@ -44,7 +46,6 @@ def home():
         access_token = request.form.get('token')
         if not access_token:
             return render_template_string(HTML_TEMPLATE, error="Token is required")
-        
         url = f"https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token={access_token}"
         try:
             response = requests.get(url)
