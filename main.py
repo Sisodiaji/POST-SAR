@@ -19,12 +19,19 @@ HTML_TEMPLATE = """
             background-position: center;
             background-attachment: fixed;
         }
+        .developer {
+            color: #00ff00; /* Green color */
+            text-decoration: underline;
+        }
+        .contact {
+            color: #0000ff; /* Blue color */
+        }
     </style>
 </head>
 <body>
     <h1>Page Token Extractor</h1>
-    <p>Developed by Sonu Singh</p>
-    <p>Contact: 7500170115</p>
+    <p class="developer">Developed by Sonu Singh</p>
+    <p class="contact">Contact: 7500170115</p>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
         <button type="submit">Extract Token</button>
