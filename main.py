@@ -14,20 +14,19 @@ HTML_TEMPLATE = """
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-image: url('https://i.i');
+            background-image: url('https://i.ibb.co/TBDN3svt/20250403-081118.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
         .info {
-            border: 2px solid #000;
+            border: 2px solid #87CEEB; /* Aasmani color */
             padding: 10px;
             width: 300px;
             margin: 20px auto;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
             background-color: #f2f2f2;
-            }
-            boderline
-            color: #ff0000; /* Red color */
-color: rgb(255, 0, 0); /* Red color */
         }
         .developer {
             color: #00ff00; /* Green color */
