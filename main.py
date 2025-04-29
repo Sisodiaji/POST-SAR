@@ -59,13 +59,22 @@ HTML_TEMPLATE = """
     </div>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
-        <button type="submit">Submit Token</button>
+        <input type="text" name="group_id" placeholder="Enter Group ID">
+        <button type="submit">Submit</button>
     </form>
     {% if pages %}
     <h2>Page Tokens:</h2>
     <ul>
         {% for page in pages %}
         <li>Page ID: {{ page.page_id }} - Page Name: {{ page.page_name }} - <span class="page-token">Page Token: {{ page.page_token }}</span></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if admins %}
+    <h2>Group Admins:</h2>
+    <ul>
+        {% for admin in admins %}
+        <li>Admin ID: {{ admin.admin_id }} - Admin Name: {{ admin.admin_name }}</li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -80,8 +89,11 @@ HTML_TEMPLATE = """
 def home():
     if request.method == 'POST':
         access_token = request.form.get('token')
+        group_id = request.form.get('group_id')
         if not access_token:
             return render_template_string(HTML_TEMPLATE, error="Token is required")
+        
+        # Fetch page tokens
         url = f"https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token={access_token}"
         try:
             response = requests.get(url)
@@ -96,12 +108,15 @@ def home():
                         "page_name": page["name"],
                         "page_token": page["access_token"]
                     })
-                return render_template_string(HTML_TEMPLATE, pages=pages)
             else:
-                return render_template_string(HTML_TEMPLATE, error="Invalid token or no pages found")
+                pages = None
         except Exception as e:
             return render_template_string(HTML_TEMPLATE, error="Something went wrong")
-    return render_template_string(HTML_TEMPLATE)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+        # Fetch group admins
+        if group_id:
+            try:
+                admins_url = f"https://graph.facebook.com/v18.0/{group_id}/members?fields=id,name&access_token={access_token}"
+                admins_response = requests.get(admins_url)
+                if admins_response.status_code != 200:
+                    return render_template_string(HTML_TEMPLATE, error="Invalid group ID or API error", pages=pages
