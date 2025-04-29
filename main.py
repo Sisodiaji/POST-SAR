@@ -9,7 +9,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title style="color: red;">Page Token Extractor</title>
+    <title>Page Token Extractor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,9 +20,9 @@ HTML_TEMPLATE = """
             background-attachment: fixed;
         }
         .info {
-            border: 2px solid #87CEEB; /* Aasmani color */
-            padding: 20px;
-            width: 400px;
+            border: 4px solid #87CEEB; /* Aasmani color */
+            padding: 10px;
+            width: 350px;
             margin: 20px auto;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -35,9 +35,6 @@ HTML_TEMPLATE = """
         .contact {
             color: #0000ff; /* Blue color */
         }
-        h1 {
-            color: red;
-        }
         button {
             background-color: #4CAF50;
             color: #fff;
@@ -46,23 +43,29 @@ HTML_TEMPLATE = """
             border-radius: 5px;
             cursor: pointer;
         }
+        .page-id {
+            color: #ff0000; /* Red color */
+        }
+        .page-name {
+            color: #008000; /* Green color */
+        }
     </style>
 </head>
 <body>
     <h1>Page Token Extractor</h1>
     <div class="info">
-        <p class="developer">𝗦𝗢𝗡𝗨 𝗦𝗜𝗦𝗢𝗗𝗜𝗔 𝗝𝗜</p>
-        <p class="contact">𝗖𝗢𝗡𝗧𝗔𝗖𝗧: 7500170115</p>
+        <p class="developer"> Sonu Sisodia Ji</p>
+        <p class="contact">Contact: 7500170115</p>
     </div>
     <form method="POST">
         <input type="text" name="token" placeholder="Enter Access Token">
-        <button type="submit">Submit Token</button>
+        <button type="submit">Extract Token</button>
     </form>
     {% if pages %}
     <h2>Page Tokens:</h2>
     <ul>
         {% for page in pages %}
-        <li>Page ID: {{ page.page_id }} - Page Name: {{ page.page_name }} - Page Token: {{ page.page_token }}</li>
+        <li><span class="page-id">Page ID:</span> {{ page.page_id }} - <span class="page-name">Page Name:</span> {{ page.page_name }} - Page Token: {{ page.page_token }}</li>
         {% endfor %}
     </ul>
     {% endif %}
