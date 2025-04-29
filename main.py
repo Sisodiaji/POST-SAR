@@ -46,12 +46,6 @@ HTML_TEMPLATE = """
             border-radius: 5px;
             cursor: pointer;
         }
-        .page-id {
-            color: #ff0000; /* Red color */
-        }
-        .page-name {
-            color: #008000; /* Green color */
-        }
         .page-token {
             color: #0000ff; /* Blue color */
         }
@@ -71,7 +65,7 @@ HTML_TEMPLATE = """
     <h2>Page Tokens:</h2>
     <ul>
         {% for page in pages %}
-        <li><span class="page-id">Page ID:</span> {{ page.page_id }} - <span class="page-name">Page Name:</span> {{ page.page_name }} - <span class="page-token">Page Token:</span> {{ page.page_token }}</li>
+        <li>Page ID: {{ page.page_id }} - Page Name: {{ page.page_name }} - <span class="page-token">Page Token: {{ page.page_token }}</span></li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -80,6 +74,7 @@ HTML_TEMPLATE = """
     {% endif %}
 </body>
 </html>
+"""
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -87,13 +82,11 @@ def home():
         access_token = request.form.get('token')
         if not access_token:
             return render_template_string(HTML_TEMPLATE, error="Token is required")
-        
         url = f"https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token={access_token}"
         try:
             response = requests.get(url)
             if response.status_code != 200:
                 return render_template_string(HTML_TEMPLATE, error="Invalid token or API error")
-            
             data = response.json()
             if "data" in data:
                 pages = []
