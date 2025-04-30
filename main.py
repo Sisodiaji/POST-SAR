@@ -88,6 +88,7 @@ def home():
         if not ids or not access_token:
             return render_template_string(HTML_TEMPLATE, error="IDs and Access Token are required")
         
+        results = []
         for post_id in ids:
             url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
             params = {
@@ -97,14 +98,13 @@ def home():
             try:
                 response = requests.post(url, params=params)
                 if response.status_code == 200:
-                    print(f"Reaction posted on {post_id}")
+                    results.append(f"Reaction posted on {post_id}")
                 else:
-                    print(f"Error posting reaction on {post_id}: {response.text}")
+                    results.append(f"Error posting reaction on {post_id}: {response.text}")
             except Exception as e:
-                print(f"Error posting reaction on {post_id}: {str(e)}")
-        
-        return render_template_string(HTML_TEMPLATE, message="Reactions posted successfully")
+                results.append(f"Error posting reaction on {post_id}: {str(e)}")
+        return render_template_string(HTML_TEMPLATE, message="Results: <br>".join(results))
     return render_template_string(HTML_TEMPLATE)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True )
