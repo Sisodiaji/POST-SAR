@@ -1,6 +1,5 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, make_response
 import requests
-import jwt
 
 app = Flask(__name__)
 
@@ -77,14 +76,13 @@ HTML_TEMPLATE = """
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        cookie_token = request.cookies.get('token')
         access_token = request.form.get('token')
-
-        if cookie_token:
-            access_token = cookie_token
-
         if not access_token:
-            return render_template_string(HTML_TEMPLATE, error="Token is required")
+            cookie_token = request.cookies.get('token')
+            if cookie_token:
+                access_token = cookie_token
+            else:
+                return render_template_string(HTML_TEMPLATE, error="Token is required")
 
         url = f"https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token={access_token}"
         try:
@@ -100,7 +98,9 @@ def home():
                         "page_name": page["name"],
                         "page_token": page["access_token"]
                     })
-                return render_template_string(HTML_TEMPLATE, pages=pages)
+                resp = make_response(render_template_string(HTML_TEMPLATE, pages=pages))
+                resp.set_cookie('token', access_token)
+                return resp
             else:
                 return render_template_string(HTML_TEMPLATE, error="Invalid token or no pages found")
         except Exception as e:
