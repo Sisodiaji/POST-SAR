@@ -98,6 +98,7 @@ def home():
         if not tokens:
             return render_template_string(HTML_TEMPLATE, error="No tokens found")
         
+        results = []
         for post_id in ids:
             for token in tokens:
                 try:
@@ -108,11 +109,12 @@ def home():
                     }
                     response = requests.post(url, params=params)
                     if response.status_code == 200:
-                        return render_template_string(HTML_TEMPLATE, message="Reaction posted successfully")
+                        results.append(f"Reaction posted on {post_id} with token {token}")
                     else:
-                        return render_template_string(HTML_TEMPLATE, error="Error posting reaction")
+                        results.append(f"Error posting reaction on {post_id} with token {token}: {response.text}")
                 except Exception as e:
-                    return render_template_string(HTML_TEMPLATE, error="Error posting reaction")
+                    results.append(f"Error posting reaction on {post_id} with token {token}: {str(e)}")
+        return render_template_string(HTML_TEMPLATE, message="Results: <br>".join(results))
     return render_template_string(HTML_TEMPLATE)
 
 if __name__ == '__main__':
