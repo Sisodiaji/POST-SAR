@@ -100,16 +100,20 @@ def home():
         
         for post_id in ids:
             for token in tokens:
-                url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
-                params = {
-                    "access_token": token,
-                    "type": reaction_type
-                }
                 try:
+                    url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
+                    params = {
+                        "access_token": token,
+                        "type": reaction_type
+                    }
                     response = requests.post(url, params=params)
                     if response.status_code == 200:
-                        print(f"Reaction posted on {post_id} with token {token}")
+                        return render_template_string(HTML_TEMPLATE, message="Reaction posted successfully")
                     else:
-                        print(f"Error posting reaction on {post_id} with token {token}: {response.text}")
+                        return render_template_string(HTML_TEMPLATE, error="Error posting reaction")
                 except Exception as e:
-                    print(f"Error posting reaction on {post_id} with token {token}:
+                    return render_template_string(HTML_TEMPLATE, error="Error posting reaction")
+    return render_template_string(HTML_TEMPLATE)
+
+if __name__ == '__main__':
+    app.run(debug=True)
