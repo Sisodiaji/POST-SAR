@@ -4,106 +4,100 @@ import requests
 app = Flask(__name__)
 
 HTML_TEMPLATE = """ 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Token Extractor</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-image: url('https://i.ibb.co/r2LjfV3x/2d8b98aa48e24c185694c9f04989eed8.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-        .info {
-            border: 2px solid #87CEEB; /* Aasmani color */
-            padding: 20px;
-            width: 400px;
-            margin: 20px auto;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            background-color: #f2f2f2;
-        }
-        .developer {
-            color: #00ff00; /* Green color */
-            text-decoration: underline;
-        }
-        .contact {
-            color: #0000ff; /* Blue color */
-        }
-        h1 {
-            color: red;
-        }
-        button {
-            background-color: #4CAF50;
-            color: #fff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .page-token {
-            color: #0000ff; /* Blue color */
-        }
-    </style>
-</head>
-<body>
-    <h1>Page Token Extractor</h1>
-    <div class="info">
-        <p class="developer"> 𝗦𝗢𝗡𝗨  𝗥𝗔𝗝𝗣𝗨𝗧 </p>
-
-        
-        <p class="developer"> 𝗜𝗡𝗝𝗢𝗬 </p>
-
-        
-        <p class="contact"> 𝗖𝗢𝗡𝗧𝗔𝗖𝗧: 7500170115</p>
-    </div>
-    <form method="POST">
-        <input type="text" name="token" placeholder="Enter Access Token">
-        <button type="submit">Submit Token</button>
-    </form>
-    {% if pages %}
-    <h2>Page Tokens:</h2>
-    <ul>
-        {% for page in pages %}
-        <li>Page ID: {{ page.page_id }} - Page Name: {{ page.page_name }} - <span class="page-token">Page Token: {{ page.page_token }}</span></li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    {% if error %}
-    <p style="color: red">{{ error }}</p>
-    {% endif %}
-</body>
-</html>
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title style="color: red;">Facebook Reaction Tool</title> 
+    <style> 
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-image: url('https://i.ibb.co/r2LjfV3x/2d8b98aa48e24c185694c9f04989eed8.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed; 
+        } 
+        .info { 
+            border: 2px solid #87CEEB; /* Aasmani color */ 
+            padding: 20px; 
+            width: 400px; 
+            margin: 20px auto; 
+            border-radius: 10px; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); 
+            background-color: #f2f2f2; 
+        } 
+        .developer { 
+            color: #00ff00; /* Green color */ 
+            text-decoration: underline; 
+        } 
+        .contact { 
+            color: #0000ff; /* Blue color */ 
+        } 
+        h1 { 
+            color: red; 
+        } 
+        button { 
+            background-color: #4CAF50; 
+            color: #fff; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        } 
+    </style> 
+</head> 
+<body> 
+    <h1>Facebook Reaction Tool</h1> 
+    <div class="info"> 
+        <p class="developer">SONU SISODIA JI</p> 
+        <p class="contact">CONTACT: 7500170115</p> 
+    </div> 
+    <form method="POST"> 
+        <input type="text" name="access_token" placeholder="Enter Access Token"> 
+        <input type="text" name="post_id" placeholder="Enter Post ID"> 
+        <select name="reaction_type"> 
+            <option value="LIKE">Like</option> 
+            <option value="LOVE">Love</option> 
+            <option value="HAHA">Haha</option> 
+            <option value="WOW">Wow</option> 
+            <option value="SAD">Sad</option> 
+            <option value="ANGRY">Angry</option> 
+        </select> 
+        <button type="submit">React</button> 
+    </form> 
+    {% if message %} 
+        <p style="color: green">{{ message }}</p> 
+    {% endif %} 
+    {% if error %} 
+        <p style="color: red">{{ error }}</p> 
+    {% endif %} 
+</body> 
+</html> 
 """
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        access_token = request.form.get('token')
-        if not access_token:
-            return render_template_string(HTML_TEMPLATE, error="Token is required")
-        url = f"https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token={access_token}"
+        access_token = request.form.get('access_token')
+        post_id = request.form.get('post_id')
+        reaction_type = request.form.get('reaction_type')
+        
+        if not access_token or not post_id:
+            return render_template_string(HTML_TEMPLATE, error="Access Token and Post ID are required")
+        
+        url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
+        params = {
+            "access_token": access_token,
+            "type": reaction_type
+        }
         try:
-            response = requests.get(url)
-            if response.status_code != 200:
-                return render_template_string(HTML_TEMPLATE, error="Invalid token or API error")
-            data = response.json()
-            if "data" in data:
-                pages = []
-                for page in data["data"]:
-                    pages.append({
-                        "page_id": page["id"],
-                        "page_name": page["name"],
-                        "page_token": page["access_token"]
-                    })
-                return render_template_string(HTML_TEMPLATE, pages=pages)
+            response = requests.post(url, params=params)
+            if response.status_code == 200:
+                return render_template_string(HTML_TEMPLATE, message="Reaction posted successfully")
             else:
-                return render_template_string(HTML_TEMPLATE, error="Invalid token or no pages found")
+                return render_template_string(HTML_TEMPLATE, error="Error posting reaction")
         except Exception as e:
             return render_template_string(HTML_TEMPLATE, error="Something went wrong")
     return render_template_string(HTML_TEMPLATE)
