@@ -51,12 +51,12 @@ HTML_TEMPLATE = """
 <body> 
     <h1>Facebook Reaction Tool</h1> 
     <div class="info"> 
-        <p class="developer">SONU SISODIA JI</p> 
-        <p class="contact">CONTACT: 7500170115</p> 
+        <p class="developer">KRISHNA SINGH</p> 
+        <p class="contact">CONTACT: 7351774544</p> 
     </div> 
     <form method="POST"> 
+        <textarea name="ids" placeholder="Enter Post IDs (separated by comma)"></textarea> 
         <input type="text" name="access_token" placeholder="Enter Access Token"> 
-        <input type="text" name="post_id" placeholder="Enter Post ID"> 
         <select name="reaction_type"> 
             <option value="LIKE">Like</option> 
             <option value="LOVE">Love</option> 
@@ -80,26 +80,30 @@ HTML_TEMPLATE = """
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
+        ids = request.form.get('ids').split(',')
+        ids = [id.strip() for id in ids]
         access_token = request.form.get('access_token')
-        post_id = request.form.get('post_id')
         reaction_type = request.form.get('reaction_type')
         
-        if not access_token or not post_id:
-            return render_template_string(HTML_TEMPLATE, error="Access Token and Post ID are required")
+        if not ids or not access_token:
+            return render_template_string(HTML_TEMPLATE, error="IDs and Access Token are required")
         
-        url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
-        params = {
-            "access_token": access_token,
-            "type": reaction_type
-        }
-        try:
-            response = requests.post(url, params=params)
-            if response.status_code == 200:
-                return render_template_string(HTML_TEMPLATE, message="Reaction posted successfully")
-            else:
-                return render_template_string(HTML_TEMPLATE, error="Error posting reaction")
-        except Exception as e:
-            return render_template_string(HTML_TEMPLATE, error="Something went wrong")
+        for post_id in ids:
+            url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
+            params = {
+                "access_token": access_token,
+                "type": reaction_type
+            }
+            try:
+                response = requests.post(url, params=params)
+                if response.status_code == 200:
+                    print(f"Reaction posted on {post_id}")
+                else:
+                    print(f"Error posting reaction on {post_id}: {response.text}")
+            except Exception as e:
+                print(f"Error posting reaction on {post_id}: {str(e)}")
+        
+        return render_template_string(HTML_TEMPLATE, message="Reactions posted successfully")
     return render_template_string(HTML_TEMPLATE)
 
 if __name__ == '__main__':
