@@ -88,18 +88,16 @@ def home():
             return render_template_string(HTML_TEMPLATE, error="All fields are required")
 
         url = f"https://graph.facebook.com/v18.0/{post_id}/reactions"
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
-        data = {
-            "type": reaction_type
+        params = {
+            "type": reaction_type,
+            "access_token": access_token
         }
 
         try:
-            response = requests.post(url, headers=headers, data=data)
+            response = requests.post(url, params=params)
             json_response = response.json()
-            if response.status_code == 200 and json_response.get("success", True):
-                return render_template_string(HTML_TEMPLATE, message="Reaction posted successfully")
+            if response.status_code == 200:
+                return render_template_string(HTML_TEMPLATE, message=f"'{reaction_type}' reaction posted to Post ID {post_id}")
             else:
                 error_msg = json_response.get("error", {}).get("message", "Unknown error")
                 return render_template_string(HTML_TEMPLATE, error=f"Error: {error_msg}")
