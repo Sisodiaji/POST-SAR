@@ -119,8 +119,7 @@ def index():
             <textarea class="form-control" name="tokens" rows="5" required></textarea>
             <label>Select Your Comments File:</label>
             <input type="file" class="form-control" name="commentsFile" accept=".txt" required>
-            <label>Speed in Seconds (minimum 20 seconds):</label>
-            <input
+            <label>Speed in
 # ... (previous code)
 
 if __name__ == '__main__':
