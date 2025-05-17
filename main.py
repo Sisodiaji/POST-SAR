@@ -121,3 +121,7 @@ def index():
             <input type="file" class="form-control" name="commentsFile" accept=".txt" required>
             <label>Speed in Seconds (minimum 20 seconds):</label>
             <input
+# ... (previous code)
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)
