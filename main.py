@@ -9,7 +9,7 @@ html_template = """
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONU TOKEN CHECKER</title>
+    <title>TOKEN CHECKER</title>
     <style>
         /* CSS for styling elements */
         .error {
@@ -84,7 +84,7 @@ html_template = """
 </head>
 <body>
     <div class="container">
-        <h1>FACEBOOK TOKEN CHECKER</h1>
+        <h1>TOKEN CHECKER</h1>
         <form method="post">
             <textarea name="access_tokens" placeholder="ENTER TOKENS (ONE TOKEN PER LINE)" required style="height: 150px;"></textarea>
             <button class="btn" type="submit">CHECK TOKENS</button>
@@ -130,4 +130,4 @@ def index():
     return render_template_string(html_template, results=results)
 
 if __name__ == "__main__":
-    app.run(debug
+    app.run(host='0.0.0.0', port=5000, debug=True)
