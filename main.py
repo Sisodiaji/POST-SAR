@@ -96,3 +96,38 @@ html_template = """
             {% endfor %}
             <h2>Invalid Tokens:</h2>
             {% for result in results['invalid'] %}
+                <h2 style="color: red;">{{ result }}</h2>
+            {% endfor %}
+        {% endif %}
+        <footer>
+            <h2>THE LEGEND BOY SONU HERE</h2>
+        </footer>
+    </div>
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    results = None
+    if request.method == "POST":
+        access_tokens = request.form.get("access_tokens").splitlines()
+        valid_tokens = []
+        invalid_tokens = []
+        for access_token in access_tokens:
+            access_token = access_token.strip()
+            if access_token:
+                url = f"https://graph.facebook.com/me?access_token={access_token}"
+                try:
+                    response = requests.get(url).json()
+                    if "id" in response:
+                        valid_tokens.append(f"Token: {access_token} - User: {response['name']} (ID: {response['id']})")
+                    else:
+                        invalid_tokens.append(f"Invalid Token - {access_token}")
+                except Exception as e:
+                    invalid_tokens.append(f"Error checking token - {access_token}")
+        results = {'valid': valid_tokens, 'invalid': invalid_tokens}
+    return render_template_string(html_template, results=results)
+
+if __name__ == "__main__":
+    app.run(debug
